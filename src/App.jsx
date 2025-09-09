@@ -176,15 +176,35 @@ function App() {
       const initialBoard = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
       const gameDocRef = doc(db, 'games', gameId);
 
+      // 승패에 따라 플레이어 순서 변경
+      let newPlayers = { ...gameData.players };
+      let newCurrentPlayer = 'B';
+
+      if (gameData.winner === 'B') {
+        // 흑돌이 이겼다면: 패자(백돌)가 흑돌이 되고 승자(흑돌)가 백돌이 됨
+        newPlayers = {
+          B: gameData.players.W, // 패자가 흑돌
+          W: gameData.players.B  // 승자가 백돌
+        };
+        newCurrentPlayer = 'B'; // 새로운 흑돌(패자)의 차례
+      } else if (gameData.winner === 'W') {
+        // 백돌이 이겼다면: 플레이어 순서 유지, 승자(백돌)부터 시작
+        newPlayers = { ...gameData.players };
+        newCurrentPlayer = 'W'; // 승자(백돌)의 차례
+      }
+
       await updateDoc(gameDocRef, {
         board: JSON.stringify(initialBoard),
-        currentPlayer: 'B',
+        players: newPlayers,
+        currentPlayer: newCurrentPlayer,
         winner: null,
-        gameStatus: 'playing', // 두 플레이어가 이미 있으므로 바로 플레이 상태로
+        gameStatus: 'playing',
         createdAt: serverTimestamp(),
       });
 
-      alert('게임이 재시작되었습니다! 흑돌부터 다시 시작합니다.');
+      const winnerText = gameData.winner === 'B' ? '흑돌' : '백돌';
+      const firstPlayerText = newCurrentPlayer === 'B' ? '흑돌' : '백돌';
+      alert(`게임이 재시작되었습니다! ${winnerText} 승리자이므로 ${firstPlayerText}부터 시작합니다.`);
     } catch (e) {
       console.error("Error restarting game: ", e);
       alert('게임 재시작에 실패했습니다.');
