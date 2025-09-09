@@ -190,17 +190,19 @@ function App() {
       let newCurrentPlayer = 'B';
 
       if (gameData.winner === 'B') {
-        // 원래 흑돌(호스트)이 이겼다면: 패자(백돌)가 흑돌이 되고 승자(흑돌)가 백돌이 됨
-        // 호스트는 항상 gameData.players.B의 원래 주인이므로, 패자가 새로운 흑돌이 됨
+        // 원래 흑돌이 이겼다면: 패자(백돌)가 흑돌이 되고 승자(흑돌)가 백돌이 됨
         newPlayers = {
           B: gameData.players.W, // 패자(원래 백돌)가 새로운 흑돌
           W: gameData.players.B  // 승자(원래 흑돌)가 새로운 백돌
         };
         newCurrentPlayer = 'B'; // 패자(새로운 흑돌)의 차례
       } else if (gameData.winner === 'W') {
-        // 원래 백돌(게스트)이 이겼다면: 플레이어 순서 유지, 승자(백돌)부터 시작
-        newPlayers = { ...gameData.players };
-        newCurrentPlayer = 'W'; // 승자(백돌)의 차례
+        // 원래 백돌이 이겼다면: 패자(흑돌)가 흑돌이 되고 승자(백돌)가 백돌이 됨
+        newPlayers = {
+          B: gameData.players.B, // 패자(원래 흑돌)가 새로운 흑돌
+          W: gameData.players.W  // 승자(원래 백돌)가 새로운 백돌
+        };
+        newCurrentPlayer = 'B'; // 패자(새로운 흑돌)의 차례
       } else {
         // 무승부 또는 기타 경우: 기본값 유지
         newPlayers = { ...gameData.players };
@@ -220,8 +222,7 @@ function App() {
       });
 
       const winnerText = gameData.winner === 'B' ? '흑돌' : '백돌';
-      const firstPlayerText = newCurrentPlayer === 'B' ? '흑돌' : '백돌';
-      alert(`게임이 재시작되었습니다! ${winnerText} 승리자이므로 ${firstPlayerText}부터 시작합니다.`);
+      alert(`게임이 재시작되었습니다! ${winnerText} 승리로 인해 패자가 흑돌부터 시작합니다.`);
     } catch (e) {
       console.error("Error restarting game: ", e);
       alert('게임 재시작에 실패했습니다.');
