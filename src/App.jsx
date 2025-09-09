@@ -180,11 +180,11 @@ function App() {
         board: JSON.stringify(initialBoard),
         currentPlayer: 'B',
         winner: null,
-        gameStatus: 'waiting', // 재시작 후 대기 상태로
+        gameStatus: 'playing', // 두 플레이어가 이미 있으므로 바로 플레이 상태로
         createdAt: serverTimestamp(),
       });
 
-      alert('게임이 재시작되었습니다! 상대방이 다시 참가할 때까지 기다려주세요.');
+      alert('게임이 재시작되었습니다! 흑돌부터 다시 시작합니다.');
     } catch (e) {
       console.error("Error restarting game: ", e);
       alert('게임 재시작에 실패했습니다.');
