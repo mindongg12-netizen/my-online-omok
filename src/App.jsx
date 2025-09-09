@@ -111,6 +111,8 @@ function App() {
       // 생성된 4자리 ID로 문서 생성
       const gameDocRef = doc(db, 'games', gameId);
       await setDoc(gameDocRef, newGame);
+      // 호스트 정보 저장 (게임 생성 시)
+      localStorage.setItem(`game_${gameId}_host`, playerId);
       setGameId(gameId);
     } catch (e) {
       console.error("Error creating game: ", e);
@@ -159,6 +161,8 @@ function App() {
         });
       }
 
+      // 호스트 정보 저장 (게임 참가 시)
+      localStorage.setItem(`game_${gameId}_host`, game.players.B);
       setGameId(gameId);
     } catch (e) {
       console.error("Error joining game: ", e);
@@ -168,8 +172,13 @@ function App() {
   };
 
   const handleRestartGame = async () => {
-    if (!gameData || gameData.players.B !== playerId) {
-      return; // 호스트가 아니면 재시작 불가
+    // 호스트 판별: localStorage에 저장된 호스트 정보로 확인
+    const storedHostId = localStorage.getItem(`game_${gameId}_host`);
+    const isHost = storedHostId === playerId || gameData?.players.B === playerId;
+
+    if (!gameData || !isHost) {
+      alert('방장만 게임을 재시작할 수 있습니다.');
+      return;
     }
 
     try {
@@ -181,17 +190,25 @@ function App() {
       let newCurrentPlayer = 'B';
 
       if (gameData.winner === 'B') {
-        // 흑돌이 이겼다면: 패자(백돌)가 흑돌이 되고 승자(흑돌)가 백돌이 됨
+        // 원래 흑돌(호스트)이 이겼다면: 패자(백돌)가 흑돌이 되고 승자(흑돌)가 백돌이 됨
+        // 호스트는 항상 gameData.players.B의 원래 주인이므로, 패자가 새로운 흑돌이 됨
         newPlayers = {
-          B: gameData.players.W, // 패자가 흑돌
-          W: gameData.players.B  // 승자가 백돌
+          B: gameData.players.W, // 패자(원래 백돌)가 새로운 흑돌
+          W: gameData.players.B  // 승자(원래 흑돌)가 새로운 백돌
         };
-        newCurrentPlayer = 'B'; // 새로운 흑돌(패자)의 차례
+        newCurrentPlayer = 'B'; // 패자(새로운 흑돌)의 차례
       } else if (gameData.winner === 'W') {
-        // 백돌이 이겼다면: 플레이어 순서 유지, 승자(백돌)부터 시작
+        // 원래 백돌(게스트)이 이겼다면: 플레이어 순서 유지, 승자(백돌)부터 시작
         newPlayers = { ...gameData.players };
         newCurrentPlayer = 'W'; // 승자(백돌)의 차례
+      } else {
+        // 무승부 또는 기타 경우: 기본값 유지
+        newPlayers = { ...gameData.players };
+        newCurrentPlayer = 'B';
       }
+
+      // 호스트 정보 업데이트 (localStorage)
+      localStorage.setItem(`game_${gameId}_host`, newPlayers.B);
 
       await updateDoc(gameDocRef, {
         board: JSON.stringify(initialBoard),
