@@ -18,6 +18,23 @@ const db = getFirestore(app);
 
 const BOARD_SIZE = 19;
 
+// 4자리 숫자 게임 ID 생성 함수
+const generateGameId = () => {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+};
+
+// 게임 ID 존재 여부 확인 함수
+const checkGameIdExists = async (gameId) => {
+  try {
+    const gameDocRef = doc(db, 'games', gameId);
+    const gameDoc = await getDoc(gameDocRef);
+    return gameDoc.exists();
+  } catch (e) {
+    console.error("Error checking game ID:", e);
+    return false;
+  }
+};
+
 function App() {
   const [gameId, setGameId] = useState('');
   const [gameData, setGameData] = useState(null);
@@ -72,24 +89,54 @@ function App() {
         gameStatus: 'waiting',
         createdAt: serverTimestamp(),
       };
-      const docRef = await addDoc(collection(db, "games"), newGame);
-      setGameId(docRef.id);
+
+      // 4자리 숫자 ID 생성 및 중복 체크 (최대 10번 시도)
+      let gameId = '';
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      while (attempts < maxAttempts) {
+        gameId = generateGameId();
+        const exists = await checkGameIdExists(gameId);
+        if (!exists) {
+          break; // 중복되지 않는 ID를 찾음
+        }
+        attempts++;
+      }
+
+      if (attempts >= maxAttempts) {
+        throw new Error('사용 가능한 게임 ID를 생성할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      }
+
+      // 생성된 4자리 ID로 문서 생성
+      const gameDocRef = doc(db, 'games', gameId);
+      await setDoc(gameDocRef, newGame);
+      setGameId(gameId);
     } catch (e) {
       console.error("Error creating game: ", e);
-      setError('게임을 생성하는 데 실패했습니다. Firebase 설정을 확인하세요.');
+      setError(e.message || '게임을 생성하는 데 실패했습니다. Firebase 설정을 확인하세요.');
     }
     setLoading(false);
   };
 
   const handleJoinGame = async () => {
-    if (!inputGameId.trim()) {
+    const gameId = inputGameId.trim();
+
+    if (!gameId) {
       setError('게임 ID를 입력해주세요.');
       return;
     }
+
+    // 4자리 숫자 검증
+    if (!/^\d{4}$/.test(gameId)) {
+      setError('게임 ID는 4자리 숫자여야 합니다.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      const gameDocRef = doc(db, 'games', inputGameId.trim());
+      const gameDocRef = doc(db, 'games', gameId);
       const gameDoc = await getDoc(gameDocRef);
 
       if (!gameDoc.exists()) {
@@ -104,7 +151,7 @@ function App() {
         setLoading(false);
         return;
       }
-      
+
       if(game.players.B !== playerId && game.players.W === null) {
         await updateDoc(gameDocRef, {
             'players.W': playerId,
@@ -112,7 +159,7 @@ function App() {
         });
       }
 
-      setGameId(inputGameId.trim());
+      setGameId(gameId);
     } catch (e) {
       console.error("Error joining game: ", e);
       setError('게임에 참가하는 데 실패했습니다.');
@@ -184,7 +231,8 @@ function App() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-800 text-white p-4">
         <h1 className="text-4xl font-bold mb-2">온라인 오목 게임</h1>
         <div className="mb-4 text-center">
-            <p>게임 ID: <span className="font-bold text-yellow-300">{gameId}</span> (이 ID를 친구에게 알려주세요!)</p>
+            <p>게임 코드: <span className="font-bold text-yellow-300 text-2xl">{gameId}</span></p>
+            <p className="text-sm text-slate-300">(친구에게 이 4자리 코드를 알려주세요!)</p>
             <p>나의 돌: {mySymbol === 'B' ? '흑돌 ⚫' : '백돌 ⚪'}</p>
         </div>
         
@@ -243,8 +291,9 @@ function App() {
                 <input
                     type="text"
                     value={inputGameId}
-                    onChange={(e) => setInputGameId(e.target.value)}
-                    placeholder="게임 ID 입력"
+                    onChange={(e) => setInputGameId(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="4자리 숫자 게임 ID 입력 (예: 1234)"
+                    maxLength="4"
                     className="p-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
