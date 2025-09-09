@@ -314,10 +314,18 @@ function App() {
                 </button>
               )}
             </div>
+          ) : gameData.players.W === null ? (
+            <div className="text-center">
+              <p className="text-2xl text-blue-400 mb-2">⏳ 대기중</p>
+              <p className="text-slate-300">상대방이 접속할 때까지 기다려주세요...</p>
+            </div>
           ) : (
-            <p>현재 플레이어: {gameData.currentPlayer === 'B' ? '흑돌 ⚫' : '백돌 ⚪'}
-            {gameData.currentPlayer === mySymbol && <span className="text-yellow-400"> (당신 차례)</span>}
-            </p>
+            <div className="text-center">
+              <p className="text-2xl text-green-400 mb-2">🎮 게임 시작!</p>
+              <p>현재 플레이어: {gameData.currentPlayer === 'B' ? '흑돌 ⚫' : '백돌 ⚪'}
+              {gameData.currentPlayer === mySymbol && <span className="text-yellow-400"> (당신 차례)</span>}
+              </p>
+            </div>
           )}
         </div>
 
