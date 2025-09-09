@@ -282,6 +282,15 @@ function App() {
     return null;
   };
 
+  const handleGameSelect = () => {
+    // 게임 선택 버튼 클릭 시 로비로 돌아감
+    if (window.confirm('게임을 나가시겠습니까? 진행 중인 게임이 종료됩니다.')) {
+      setGameId('');
+      setGameData(null);
+      setError('');
+    }
+  };
+
   const renderGame = () => {
     if (!gameData) {
       return <div>게임을 불러오는 중...</div>;
@@ -290,7 +299,17 @@ function App() {
     const mySymbol = gameData.players.B === playerId ? 'B' : 'W';
 
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-800 text-white p-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-800 text-white p-4 relative">
+        {/* 게임선택 버튼 - 왼쪽 상단 고정 */}
+        <button
+          onClick={handleGameSelect}
+          className="absolute top-4 left-4 game-select-btn"
+          title="게임 선택으로 돌아가기"
+        >
+          <span>🎯</span>
+          <span>게임선택</span>
+        </button>
+
         <h1 className="text-4xl font-bold mb-2">온라인 오목 게임</h1>
         <div className="mb-4 text-center">
             <p>게임 코드: <span className="font-bold text-yellow-300 text-2xl">{gameId}</span></p>
