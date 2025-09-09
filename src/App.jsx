@@ -167,11 +167,35 @@ function App() {
     setLoading(false);
   };
 
+  const handleRestartGame = async () => {
+    if (!gameData || gameData.players.B !== playerId) {
+      return; // 호스트가 아니면 재시작 불가
+    }
+
+    try {
+      const initialBoard = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
+      const gameDocRef = doc(db, 'games', gameId);
+
+      await updateDoc(gameDocRef, {
+        board: JSON.stringify(initialBoard),
+        currentPlayer: 'B',
+        winner: null,
+        gameStatus: 'waiting', // 재시작 후 대기 상태로
+        createdAt: serverTimestamp(),
+      });
+
+      alert('게임이 재시작되었습니다! 상대방이 다시 참가할 때까지 기다려주세요.');
+    } catch (e) {
+      console.error("Error restarting game: ", e);
+      alert('게임 재시작에 실패했습니다.');
+    }
+  };
+
   const handleCellClick = async (row, col) => {
     if (!gameData || gameData.winner || gameData.board[row][col] || gameData.gameStatus !== 'playing') {
       return;
     }
-    
+
     const currentPlayerSymbol = gameData.currentPlayer;
     if(gameData.players[currentPlayerSymbol] !== playerId){
       alert("상대방의 턴입니다.");
@@ -185,9 +209,9 @@ function App() {
 
     const nextPlayer = currentPlayerSymbol === 'B' ? 'W' : 'B';
     const gameDocRef = doc(db, 'games', gameId);
-    
-    await updateDoc(gameDocRef, { 
-        board: JSON.stringify(newBoard), 
+
+    await updateDoc(gameDocRef, {
+        board: JSON.stringify(newBoard),
         currentPlayer: nextPlayer,
         winner: winner,
         gameStatus: winner ? 'finished' : 'playing',
@@ -238,9 +262,20 @@ function App() {
         
         <div className="mb-4 text-lg">
           {gameData.winner ? (
-            <p className="text-2xl text-green-400">
-              {gameData.winner === mySymbol ? '🎉 당신이 이겼습니다! 🎉' : '아쉽지만 패배했습니다...'}
-            </p>
+            <div className="text-center">
+              <p className="text-2xl text-green-400 mb-4">
+                {gameData.winner === mySymbol ? '🎉 당신이 이겼습니다! 🎉' : '아쉽지만 패배했습니다...'}
+              </p>
+              {/* 호스트인 경우에만 재시작 버튼 표시 */}
+              {gameData.players.B === playerId && (
+                <button
+                  onClick={handleRestartGame}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300 shadow-lg"
+                >
+                  🔄 게임 재시작
+                </button>
+              )}
+            </div>
           ) : (
             <p>현재 플레이어: {gameData.currentPlayer === 'B' ? '흑돌 ⚫' : '백돌 ⚪'}
             {gameData.currentPlayer === mySymbol && <span className="text-yellow-400"> (당신 차례)</span>}
